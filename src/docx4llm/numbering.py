@@ -1,6 +1,7 @@
 import zipfile
+from typing import Any
+
 from lxml import etree
-from typing import Dict, Tuple, List, Optional, Any
 
 
 class NumberingFormat:
@@ -11,13 +12,13 @@ class NumberingFormat:
         """Formats a number according to the specified format."""
         if format_type == "decimal":
             return str(number)
-        elif format_type == "upperRoman":
+        if format_type == "upperRoman":
             return NumberingFormat._to_roman(number)
-        elif format_type == "lowerRoman":
+        if format_type == "lowerRoman":
             return NumberingFormat._to_roman(number).lower()
-        elif format_type == "upperLetter":
+        if format_type == "upperLetter":
             return chr(ord("A") + number - 1)
-        elif format_type == "lowerLetter":
+        if format_type == "lowerLetter":
             return chr(ord("a") + number - 1)
         return str(number)
 
@@ -74,7 +75,7 @@ class NumberingDefinition:
 
     def __init__(self, abstract_num_id: str):
         self.abstract_num_id = abstract_num_id
-        self.levels: Dict[str, NumberingLevel] = {}
+        self.levels: dict[str, NumberingLevel] = {}
 
     def add_level(self, level_id: str, level: NumberingLevel) -> None:
         """Adds a numbering level."""
@@ -112,17 +113,17 @@ class XmlHelper:
     NS_MAP = {"w": WORD_NS}
 
     @staticmethod
-    def find_element(parent, xpath: str) -> Optional[etree.Element]:
+    def find_element(parent, xpath: str) -> etree.Element | None:
         """Finds an element by XPath."""
         return parent.find(xpath, namespaces=XmlHelper.NS_MAP)
 
     @staticmethod
-    def find_all_elements(parent, xpath: str) -> List[etree.Element]:
+    def find_all_elements(parent, xpath: str) -> list[etree.Element]:
         """Finds all elements by XPath."""
         return parent.xpath(xpath, namespaces=XmlHelper.NS_MAP)
 
     @staticmethod
-    def get_attribute(element, attr_name: str) -> Optional[str]:
+    def get_attribute(element, attr_name: str) -> str | None:
         """Gets an attribute value from an element."""
         if element is None:
             return None
@@ -131,7 +132,7 @@ class XmlHelper:
         return element.get(full_attr_name)
 
     @staticmethod
-    def parse_numbering_info(numPr_element) -> Tuple[Optional[str], Optional[str]]:
+    def parse_numbering_info(numPr_element) -> tuple[str | None, str | None]:
         """Extracts numbering information from a numPr element."""
         if numPr_element is None:
             return None, None
@@ -159,8 +160,8 @@ class NumberingParser:
     """Analyzes the numbering structure in a Word document."""
 
     def __init__(self):
-        self.abstract_numbering_data: Dict[str, Dict[str, Dict[str, Any]]] = {}
-        self.numbering_definitions: Dict[str, NumberingDefinition] = {}
+        self.abstract_numbering_data: dict[str, dict[str, dict[str, Any]]] = {}
+        self.numbering_definitions: dict[str, NumberingDefinition] = {}
 
     def parse_numbering_xml(self, numbering_xml_content: bytes) -> None:
         """Parses the content of the numbering.xml file from DOCX."""
@@ -172,7 +173,7 @@ class NumberingParser:
     def _parse_abstract_numbering(self, numbering_root: etree.Element) -> None:
         """Parses abstract numbering definitions."""
         for abstract_num in XmlHelper.find_all_elements(
-            numbering_root, "//w:abstractNum"
+            numbering_root, "//w:abstractNum",
         ):
             abstract_num_id = XmlHelper.get_attribute(abstract_num, "abstractNumId")
             if not abstract_num_id:
@@ -222,7 +223,7 @@ class NumberingParser:
                 abstract_num_id
             ].items():
                 level = NumberingLevel(
-                    lvl_data["format"], lvl_data["text"], lvl_data["start"]
+                    lvl_data["format"], lvl_data["text"], lvl_data["start"],
                 )
                 num_def.add_level(lvl_id, level)
 
@@ -232,7 +233,7 @@ class NumberingParser:
                     continue
 
                 start_override = XmlHelper.find_element(
-                    lvl_override, ".//w:startOverride"
+                    lvl_override, ".//w:startOverride",
                 )
                 if start_override:
                     new_start_str = XmlHelper.get_attribute(start_override, "val")
@@ -247,7 +248,7 @@ class NumberingParser:
 class ParagraphFormatter:
     """Formats paragraphs with numbering."""
 
-    def __init__(self, numbering_definitions: Dict[str, NumberingDefinition]):
+    def __init__(self, numbering_definitions: dict[str, NumberingDefinition]):
         self.numbering_definitions = numbering_definitions
         self.last_active_levels = {}
 
@@ -288,7 +289,7 @@ class ParagraphFormatter:
             return f"{num_prefix} {paragraph_text}"
         return paragraph_text
 
-    def _has_valid_numbering(self, ilvl: Optional[str], num_id: Optional[str]) -> bool:
+    def _has_valid_numbering(self, ilvl: str | None, num_id: str | None) -> bool:
         """Checks if a paragraph has valid numbering."""
         if not ilvl or not num_id or num_id not in self.numbering_definitions:
             return False
@@ -312,8 +313,7 @@ class DocumentCleaner:
 
     @staticmethod
     def clean_document(document_root: etree.Element) -> None:
-        """
-        Cleans the document according to requirements:
+        """Cleans the document according to requirements:
         1. Removes paragraphs with w:numPr in w:pPrChange without w:t
         2. Removes all w:pPrChange and w:rPrChange tags
         """
@@ -328,7 +328,7 @@ class DocumentCleaner:
         for paragraph in XmlHelper.find_all_elements(document_root, "//w:p"):
             has_text = XmlHelper.element_exists(paragraph, ".//w:t")
             has_numPr_in_change = XmlHelper.element_exists(
-                paragraph, ".//w:pPrChange//w:numPr"
+                paragraph, ".//w:pPrChange//w:numPr",
             )
 
             if not has_text and has_numPr_in_change:
@@ -386,7 +386,7 @@ class DocxToTextConverter:
             DocumentCleaner.clean_document(document_root)
 
             paragraph_formatter = ParagraphFormatter(
-                self.numbering_parser.numbering_definitions
+                self.numbering_parser.numbering_definitions,
             )
 
             output_lines = []
@@ -396,8 +396,7 @@ class DocxToTextConverter:
                     output_lines.append(formatted_paragraph)
 
             with open(txt_path, "w", encoding="utf-8") as outfile:
-                for line in output_lines:
-                    outfile.write(line + "\n")
+                outfile.writelines(line + "\n" for line in output_lines)
 
             return True
 
@@ -407,8 +406,7 @@ class DocxToTextConverter:
 
 
 def docx_to_txt_with_numbering(docx_path: str, txt_path: str) -> bool:
-    """
-    Converts a DOCX file to TXT with proper handling of automatic lists.
+    """Converts a DOCX file to TXT with proper handling of automatic lists.
 
     Args:
         docx_path: Path to the input DOCX file
@@ -416,6 +414,7 @@ def docx_to_txt_with_numbering(docx_path: str, txt_path: str) -> bool:
 
     Returns:
         True on success, False on error
+
     """
     converter = DocxToTextConverter()
     return converter.convert(docx_path, txt_path)
