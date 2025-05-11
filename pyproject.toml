@@ -35,7 +35,6 @@ extend-exclude = '''
 preview = true
 fix = true
 target-version = "py312"
-line-length = 80
 extend-exclude = [
   # Intentionally bad code:
   "tests/**/__snapshots__/**",
@@ -44,8 +43,6 @@ extend-exclude = [
 
 [tool.ruff.format]
 quote-style = "single"
-# This is only required because we have invalid on-purpose code in docstrings:
-docstring-code-format = false
 
 [tool.ruff.lint]
 select = [
