@@ -1,6 +1,6 @@
 [project]
 name = "docx4llm"
-version = "0.1.0"
+version = "0.2.0"
 description = "library for converting DOCX files to formats suitable for LLM processing"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -85,3 +85,6 @@ select = [
   "W",    # pycodestyle
   "YTT",  # flake8-2020
 ]
+
+[project.scripts]
+docx-num-converter = "cli:main_cli"
