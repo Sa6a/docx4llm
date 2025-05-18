@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "lxml>=5.3.2",
+    "pypandoc>=1.15",
 ]
 
 [build-system]
